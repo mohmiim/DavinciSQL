@@ -14,7 +14,9 @@ public class EntryPoint {
     private Statement _statement = null;
     private ResultSet _resultSet = null;
     private final String USER = "root";
-    private final String PASSWORD = "PASSWORD";
+    private final String PASSWORD = "PASS";
+
+    private final static String TOKEN = "TOKEN";
 
 
     public String checkTable() throws SQLException {
@@ -51,12 +53,12 @@ public class EntryPoint {
     }
 
     private void readMetaData(ResultSet resultSet, StringBuilder builder) throws SQLException {
-        System.out.println("The columns in the table are: ");
+        //System.out.println("The columns in the table are: ");
         builder.append( resultSet.getMetaData().getTableName(1));
         builder.append(" that has the columns: ");
-        System.out.println("Table: " + resultSet.getMetaData().getTableName(1));
+        //System.out.println("Table: " + resultSet.getMetaData().getTableName(1));
         for  (int i = 1; i<= resultSet.getMetaData().getColumnCount(); i++){
-            System.out.println("Column " +i  + " "+ resultSet.getMetaData().getColumnName(i));
+            //System.out.println("Column " +i  + " "+ resultSet.getMetaData().getColumnName(i));
             builder.append(" ");
             builder.append( resultSet.getMetaData().getColumnName(i));
             if (i<resultSet.getMetaData().getColumnCount()) {
@@ -69,15 +71,18 @@ public class EntryPoint {
         //CSVToMySQL converter = new CSVToMySQL();
         //converter.importCSV(new File("data/most_funded_feb_2023.csv"));
         EntryPoint entry = new EntryPoint();
-
-        String token = "KEY";
-        OpenAiService service = new OpenAiService(token);
+        OpenAiService service = new OpenAiService(TOKEN);
         StringBuilder prompt = new StringBuilder(entry.checkTable());
-        prompt.append("Create a SQL request to");
-        prompt.append("find the  10 countries with the highest total goal");
-        //prompt.append("find the  10 creators with the largest goal in jp");
-        prompt.append("answer only in sql");
-        System.out.println("\nGenerating SQL ... ");
+        String Q = "find the  10 countries with the highest total goal";
+        //String Q = "العثور على أكثر 10 دول تسجيلاً للأهداف الإجمالية";
+        //String Q = "find the  10 creators with the largest goal in gb";
+
+
+        prompt.append("Create a SQL request to ");
+        prompt.append(Q);
+        prompt.append(" answer only in sql");
+        System.out.println("\nGenerating SQL ... \n");
+        System.out.println(prompt);
         CompletionRequest completionRequest = CompletionRequest.builder()
                 .model("text-davinci-003")
                 .prompt(prompt.toString())
@@ -90,7 +95,11 @@ public class EntryPoint {
         List<CompletionChoice> choices = service.createCompletion(completionRequest).getChoices();
         CompletionChoice choice = choices.get(0);
         String sql = choice.getText();
-        System.out.println(sql);
+        System.out.println("Question : " + Q + "\n");
+        System.out.println("=======  Generated Query   ====== \n");
+        System.out.println(sql.trim());
+
+        System.out.println("\nAnswer: \n");
         entry.runQuery(sql);
 /*
         System.out.println("\nCreating Image...");
