@@ -6,7 +6,7 @@ TL;DR natural language to SQL using OpenAI Davinci
 
 **Asking the question**  
 
-*Create a SQL request to find the  10 countries with the highest total goal*
+**Create a SQL request to find the  10 countries with the highest total goal**
 
 Against the CSV file most_funded_feb_2023.csv, will lead to this SQL being generated
 
