@@ -14,7 +14,7 @@ public class EntryPoint {
     private Statement _statement = null;
     private ResultSet _resultSet = null;
     private final String USER = "root";
-    private final String PASSWORD = "PASS";
+    private final String PASSWORD = "PASSWORD";
 
 
     public String checkTable() throws SQLException {
@@ -70,12 +70,14 @@ public class EntryPoint {
         //converter.importCSV(new File("data/most_funded_feb_2023.csv"));
         EntryPoint entry = new EntryPoint();
 
-        String token = "myKey";
+        String token = "KEY";
         OpenAiService service = new OpenAiService(token);
-        System.out.println("\nGenerating SQL ... ");
         StringBuilder prompt = new StringBuilder(entry.checkTable());
-        prompt.append(" Create a SQL request to find the  10 countries with the highest total goal");
-
+        prompt.append("Create a SQL request to");
+        prompt.append("find the  10 countries with the highest total goal");
+        //prompt.append("find the  10 creators with the largest goal in jp");
+        prompt.append("answer only in sql");
+        System.out.println("\nGenerating SQL ... ");
         CompletionRequest completionRequest = CompletionRequest.builder()
                 .model("text-davinci-003")
                 .prompt(prompt.toString())
@@ -83,7 +85,7 @@ public class EntryPoint {
                 .topP(1.0)
                 .frequencyPenalty(0.0)
                 .presencePenalty(0.0)
-                .maxTokens(60)
+                .maxTokens(150)
                 .build();
         List<CompletionChoice> choices = service.createCompletion(completionRequest).getChoices();
         CompletionChoice choice = choices.get(0);
