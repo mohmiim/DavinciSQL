@@ -2,8 +2,11 @@ package mo;
 
 import com.theokanning.openai.completion.CompletionChoice;
 import com.theokanning.openai.completion.CompletionRequest;
+import com.theokanning.openai.image.CreateImageRequest;
 import com.theokanning.openai.service.OpenAiService;
 
+import java.io.File;
+import java.io.IOException;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
@@ -14,7 +17,7 @@ public class EntryPoint {
     private Statement _statement = null;
     private ResultSet _resultSet = null;
     private final String USER = "root";
-    private final String PASSWORD = "PASS";
+    private final String PASSWORD = "pass";
 
     private final static String TOKEN = "TOKEN";
 
@@ -23,15 +26,17 @@ public class EntryPoint {
         try {
             StringBuilder builder = new StringBuilder();
             builder.append("given the table playground.");
-            // Setup the connection with the DB
-            _connect = DriverManager.getConnection("jdbc:mysql://localhost/playground", USER , PASSWORD);
-            _statement = _connect.createStatement();
             _resultSet = _statement.executeQuery("select * from playground.most_funded_feb_2023");
             readMetaData(_resultSet, builder);
             return builder.toString();
         } catch (Exception e) {
             throw e;
         }
+    }
+
+    public EntryPoint() throws SQLException {
+        _connect = DriverManager.getConnection("jdbc:mysql://localhost/playground", USER , PASSWORD);
+        _statement = _connect.createStatement();
     }
 
     private void close() {
@@ -68,14 +73,20 @@ public class EntryPoint {
     }
 
     public static void main(String[] args) throws SQLException {
-        //CSVToMySQL converter = new CSVToMySQL();
-        //converter.importCSV(new File("data/most_funded_feb_2023.csv"));
+        //importCSV();
+        NLToSQLForCSV();
+        NLToSQLWithJoin();
+
+    }
+
+    private static void NLToSQLForCSV() throws SQLException {
         EntryPoint entry = new EntryPoint();
         OpenAiService service = new OpenAiService(TOKEN);
         StringBuilder prompt = new StringBuilder(entry.checkTable());
         String Q = "find the  10 countries with the highest total goal";
-        //String Q = "العثور على أكثر 10 دول تسجيلاً للأهداف الإجمالية";
-        //String Q = "find the  10 creators with the largest goal in gb";
+        Q = "العثور على أكثر 10 دول تسجيلاً للأهداف الإجمالية";
+        Q = "find the  10 creators with the largest goal in gb";
+        //Q = "find the country with most creators";
 
 
         prompt.append("Create a SQL request to ");
@@ -85,6 +96,7 @@ public class EntryPoint {
         System.out.println(prompt);
         CompletionRequest completionRequest = CompletionRequest.builder()
                 .model("text-davinci-003")
+                //.model("gpt-3.5-turbo")
                 .prompt(prompt.toString())
                 .temperature(0.3)
                 .topP(1.0)
@@ -101,7 +113,38 @@ public class EntryPoint {
 
         System.out.println("\nAnswer: \n");
         entry.runQuery(sql);
-/*
+    }
+
+    private static void NLToSQLWithJoin() throws SQLException {
+        EntryPoint entry = new EntryPoint();
+        OpenAiService service = new OpenAiService(TOKEN);
+        String prompt = "Given the tables playground.products, and playground.product_sales. Where " +
+                "The playground.products table has the columns id, and name and  the playground.product_sales " +
+                "table has the columns product_id, units_sold, and price_per_unit generate SQL query " +
+                "to select the top 10 product names with the highest total sales answer only in sql ";
+        System.out.println("\nGenerating SQL ... \n");
+        System.out.println(prompt);
+        CompletionRequest completionRequest = CompletionRequest.builder()
+                .model("text-davinci-003")
+                //.model("gpt-3.5-turbo")
+                .prompt(prompt)
+                .temperature(0.3)
+                .topP(1.0)
+                .frequencyPenalty(0.0)
+                .presencePenalty(0.0)
+                .maxTokens(150)
+                .build();
+        List<CompletionChoice> choices = service.createCompletion(completionRequest).getChoices();
+        CompletionChoice choice = choices.get(0);
+        String sql = choice.getText();
+        System.out.println("=======  Generated Query   ====== \n");
+        System.out.println(sql.trim());
+
+        System.out.println("\nAnswer: \n");
+        entry.runQuery(sql);
+    }
+
+    private static void createImage(OpenAiService service) {
         System.out.println("\nCreating Image...");
         CreateImageRequest request = CreateImageRequest.builder()
                 .prompt("A cow breakdancing with a turtle")
@@ -109,7 +152,15 @@ public class EntryPoint {
 
         System.out.println("\nImage is located at:");
         System.out.println(service.createImage(request).getData().get(0).getUrl());
-*/
+    }
+
+    private static void importCSV() {
+        CSVToMySQL converter = new CSVToMySQL();
+        try {
+            converter.importCSV(new File("data/most_funded_feb_2023.csv"));
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     private void runQuery(String sql) {

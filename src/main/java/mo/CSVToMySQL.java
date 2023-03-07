@@ -14,7 +14,7 @@ public class CSVToMySQL {
     private final String _pass = "ThePassword";
 
 
-    public void importCSV(final File file) throws IOException, ClassNotFoundException {
+    public void importCSV(final File file) throws IOException {
         try ( Connection connect = DriverManager.getConnection(_url, _user, _pass)){
             Statement statement = connect.createStatement();
             try (CSVData csvData = new CSVData(file, null)) {
